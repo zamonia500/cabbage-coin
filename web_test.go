@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func testServer(t *testing.T) http.Handler {
+func testServer(t *testing.T, lang string) http.Handler {
 	t.Helper()
 	db, err := openDB(filepath.Join(t.TempDir(), "test.db"))
 	if err != nil {
@@ -29,11 +29,11 @@ func testServer(t *testing.T) http.Handler {
 	if err := db.upsertRetail(append(ps, prev...)); err != nil {
 		t.Fatal(err)
 	}
-	return (&server{db: db}).routes()
+	return (&server{db: db, lang: lang}).routes()
 }
 
 func TestPages(t *testing.T) {
-	h := testServer(t)
+	h := testServer(t, "ko")
 	for path, want := range map[string]int{
 		"/ko/": 200, "/ja/": 200, "/ko/pref/08": 200, "/ja/pref/13": 200, "/ko/muni/13110": 200,
 		"/ko/pref/99": 404, "/ko/pref/8": 404, "/ko/muni/99999": 404, "/xx/": 404,
@@ -45,17 +45,17 @@ func TestPages(t *testing.T) {
 			t.Errorf("%s: %d, want %d", path, rec.Code, want)
 		}
 	}
-	rec := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/", nil)
-	req.Header.Set("Accept-Language", "ja-JP,ja;q=0.9")
-	h.ServeHTTP(rec, req)
-	if loc := rec.Header().Get("Location"); loc != "/ja/" {
-		t.Errorf("Japanese browser redirected to %q", loc)
+	for lang, h := range map[string]http.Handler{"ko": h, "ja": testServer(t, "ja")} {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest("GET", "/", nil))
+		if loc := rec.Header().Get("Location"); loc != "/"+lang+"/" {
+			t.Errorf("-lang %s: / redirected to %q", lang, loc)
+		}
 	}
 }
 
 func TestAPIMap(t *testing.T) {
-	h := testServer(t)
+	h := testServer(t, "ko")
 	get := func(q string) map[string]mapValue {
 		rec := httptest.NewRecorder()
 		h.ServeHTTP(rec, httptest.NewRequest("GET", "/api/map?"+q, nil))

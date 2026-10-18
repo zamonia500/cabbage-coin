@@ -17,11 +17,20 @@
     new Promise((ok) => setTimeout(() => ok(EMPTY), 4000)),
   ]);
   const prefGeo = await (await fetch('/geo/pref.json')).json(); // kept for bounds and names
+  const JAPAN = [[122.5, 24], [146, 45.6]];
   const map = new maplibregl.Map({
-    container: 'map', style, center: [137.5, 37.8], zoom: 4.4, minZoom: 3.5, maxZoom: 12,
+    container: 'map', style, bounds: JAPAN, fitBoundsOptions: { padding: panelPadding() },
+    minZoom: 3.5, maxZoom: 12, maxBounds: [[110, 12], [170, 54]],
     attributionControl: { compact: true },
   });
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
+
+  // Drawn through the straits so Korea, Russia, China and Taiwan fall outside while every
+  // Japanese island (Tsushima, Yonaguni, Okinotorishima, Minamitorishima, Kurils) stays in.
+  const JAPAN_WATERS = [[140.8, 45.65], [142.3, 45.5], [145.5, 44.9], [147.8, 45.6], [149.2, 45.75], [150.5, 45],
+    [155, 40], [155.5, 24.5], [154.5, 23.5], [137, 19.6], [135.2, 20.3], [124.5, 20.5], [122.6, 23.6],
+    [122.6, 24.8], [123.2, 26.2], [125.8, 28.8], [127.6, 31.6], [128.6, 33.6], [128.95, 34.3], [129.3, 34.95],
+    [130.6, 35.7], [131.4, 37.6], [134.5, 40.5], [137.8, 43.5], [139.6, 45.7], [140.8, 45.65]];
 
   const fillColor = () => {
     const c = ['--c-2', '--c-1', '--c0', '--c1', '--c2'].map(css);
@@ -37,7 +46,14 @@
     started = true;
     map.addSource('pref', { type: 'geojson', data: prefGeo, promoteId: 'code' });
     map.addSource('muni', { type: 'geojson', data: { type: 'FeatureCollection', features: [] }, promoteId: 'code' });
-    const before = map.getStyle().layers.find((l) => l.type === 'symbol')?.id; // keep place labels on top
+    const layers = map.getStyle().layers;
+    const before = layers.find((l) => l.type === 'symbol')?.id; // keep place labels on top
+    // Place names in the page language, falling back to Japanese, then the local name.
+    for (const l of layers) {
+      if (l.type === 'symbol' && l.layout && l.layout['text-field']) {
+        map.setLayoutProperty(l.id, 'text-field', ['coalesce', ['get', `name:${B.lang}`], ['get', 'name:ja'], ['get', 'name']]);
+      }
+    }
     map.addLayer({ id: 'pref-fill', type: 'fill', source: 'pref', paint: { 'fill-color': fillColor(), 'fill-opacity': 0.82 } }, before);
     map.addLayer({ id: 'pref-line', type: 'line', source: 'pref', paint: {
       'line-color': ['case', ['boolean', ['feature-state', 'hover'], false], css('--ink'), css('--card')],
@@ -46,6 +62,12 @@
     map.addLayer({ id: 'muni-line', type: 'line', source: 'muni', paint: {
       'line-color': ['case', ['boolean', ['feature-state', 'hover'], false], css('--ink'), css('--card')],
       'line-width': ['case', ['boolean', ['feature-state', 'hover'], false], 2, 0.6] } }, before);
+    // Hide other countries: everything outside Japan's waters is painted over in the sea color.
+    const water = layers.find((l) => l.id === 'water')?.paint?.['fill-color'];
+    map.addSource('mask', { type: 'geojson', data: { type: 'Polygon', coordinates: [
+      [[-180, -85], [180, -85], [180, 85], [-180, 85], [-180, -85]], JAPAN_WATERS] } });
+    map.addLayer({ id: 'mask', type: 'fill', source: 'mask',
+      paint: { 'fill-color': typeof water === 'string' ? water : css('--page'), 'fill-antialias': false } });
     await paintPref();
     const el = panel.firstElementChild;
     if (B.kind === 'pref') await showPref(B.code, true);
@@ -101,7 +123,7 @@
   function clearMuni() {
     map.getSource('muni').setData({ type: 'FeatureCollection', features: [] });
     shownPref = null;
-    map.fitBounds([[128.5, 30.5], [146, 45.8]], { padding: panelPadding() });
+    map.fitBounds(JAPAN, { padding: panelPadding() });
   }
 
   function panelPadding() {

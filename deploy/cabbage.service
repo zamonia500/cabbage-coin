@@ -6,7 +6,7 @@ Wants=network-online.target
 [Service]
 User=cabbage
 Group=cabbage
-ExecStart=/opt/cabbage/cabbage -addr 127.0.0.1:8080 -data /var/lib/cabbage
+ExecStart=/opt/cabbage/cabbage -addr 127.0.0.1:8080 -data /var/lib/cabbage -lang ja
 Restart=always
 RestartSec=5
 StateDirectory=cabbage

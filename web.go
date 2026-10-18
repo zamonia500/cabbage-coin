@@ -75,7 +75,10 @@ func classify(d, step1, step2 float64) int {
 	return 2
 }
 
-type server struct{ db *DB }
+type server struct {
+	db   *DB
+	lang string // where / redirects: ko for local testing, ja in production
+}
 
 func (s *server) routes() http.Handler {
 	mux := http.NewServeMux()
@@ -105,12 +108,7 @@ func cacheFor(seconds int, h http.Handler) http.Handler {
 }
 
 func (s *server) root(w http.ResponseWriter, r *http.Request) {
-	lang := "ko"
-	if al := r.Header.Get("Accept-Language"); strings.HasPrefix(al, "ja") ||
-		(strings.Contains(al, "ja") && !strings.Contains(al, "ko")) {
-		lang = "ja"
-	}
-	http.Redirect(w, r, "/"+lang+"/", http.StatusFound)
+	http.Redirect(w, r, "/"+s.lang+"/", http.StatusFound)
 }
 
 func validLang(l string) bool { return l == "ko" || l == "ja" }
