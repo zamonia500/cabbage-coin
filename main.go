@@ -14,6 +14,7 @@ func main() {
 	once := flag.Bool("once", false, "run every collector once, then exit")
 	addr := flag.String("addr", "127.0.0.1:8080", "HTTP listen address")
 	noCollect := flag.Bool("no-collect", false, "serve only; do not run collectors")
+	lang := flag.String("lang", "ko", "default language for / (ko or ja)")
 	flag.Parse()
 
 	if err := os.MkdirAll(*dataDir, 0o755); err != nil {
@@ -41,7 +42,10 @@ func main() {
 		}()
 	}
 	log.Printf("listening on %s", *addr)
-	log.Fatal(http.ListenAndServe(*addr, (&server{db: db}).routes()))
+	if !validLang(*lang) {
+		log.Fatalf("-lang must be ko or ja, got %q", *lang)
+	}
+	log.Fatal(http.ListenAndServe(*addr, (&server{db: db, lang: *lang}).routes()))
 }
 
 // collectAll runs each collector and records the outcome in fetch_log.
