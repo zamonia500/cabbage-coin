@@ -1,0 +1,16 @@
+<div data-kind="muni" data-code="{{.Code}}" data-pref="{{.PrefCode}}">
+<a class="back" href="/{{.Lang}}/pref/{{.PrefCode}}" data-kind="pref" data-code="{{.PrefCode}}">{{index .T "back_pref"}} ({{.Pref}})</a>
+<h1>{{.Name}}</h1>
+<p class="muted">{{.Pref}} · {{index .T "population"}} {{.Population}}</p>
+{{if not .Enabled}}<p class="note">{{index .T "not_enabled"}}</p>{{end}}
+
+<h2>{{index .T "stores"}}</h2>
+{{if .Stores}}
+<div class="hero">
+  <strong>{{yen .Value}}</strong>
+  <span class="label">{{index .T "per_head"}} · {{printf (index .T "store_count") .Count}}</span>
+</div>
+<ul class="plain stores">{{range .Stores}}<li><span>{{.Name}}<small class="muted">{{.Product}} · {{.Date}}</small></span><b>¥{{.InTax}}</b></li>{{end}}</ul>
+{{with .Chart}}<h2>{{index $.T "store_trend"}}</h2>{{.}}{{end}}
+{{else}}<p class="muted">{{index .T "no_stores"}}</p>{{end}}
+</div>

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="{{.Lang}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{index .T "title"}}</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥬</text></svg>">
+<link rel="stylesheet" href="/static/vendor/maplibre-gl.css">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div id="map" aria-label="map"></div>
+
+<header class="top">
+  <a class="brand card" href="/{{.Lang}}/">🥬 {{index .T "brand"}}</a>
+  <label class="search card">
+    <span class="sr">{{index .T "search"}}</span>
+    <input id="search" type="search" list="search-list" placeholder="{{index .T "search"}}" autocomplete="off">
+    <datalist id="search-list"></datalist>
+  </label>
+</header>
+
+<aside id="panel" class="panel card">{{.Panel}}</aside>
+
+<aside class="side card">
+  <a class="lang" href="/{{if eq .Lang "ko"}}ja{{else}}ko{{end}}{{.Path}}">{{index .T "lang_other"}}</a>
+  <fieldset id="metric">
+    <legend>{{index .T "metric"}}</legend>
+    <label><input type="radio" name="metric" value="retail" checked> {{index .T "m_retail"}}</label>
+    <label><input type="radio" name="metric" value="mom"> {{index .T "m_mom"}}</label>
+    <label><input type="radio" name="metric" value="store"> {{index .T "m_store"}}</label>
+  </fieldset>
+  <div class="scale" aria-hidden="true">
+    <i class="c-2"></i><i class="c-1"></i><i class="c0"></i><i class="c1"></i><i class="c2"></i>
+  </div>
+  <div class="scale-labels"><span>{{index .T "cheap"}}</span><span id="scale-mid"></span><span>{{index .T "dear"}}</span></div>
+  <p id="map-label" class="muted"></p>
+</aside>
+
+<footer class="foot">
+  {{index .T "sources"}}: <a href="https://www.e-stat.go.jp/statistics/00200571">e-Stat 小売物価統計調査</a> ·
+  <a href="https://www.shijou-nippo.metro.tokyo.lg.jp/">東京都中央卸売市場日報</a> ·
+  <a href="https://shop.aeon.com/netsuper/">イオンネットスーパー</a> ·
+  <a href="https://nlftp.mlit.go.jp/ksj/">国土数値情報（行政区域）</a> ·
+  <a href="https://www.soumu.go.jp/main_sosiki/jichi_gyousei/daityo/jinkou_jinkoudoutai-setaisuu.html">総務省 住民基本台帳</a>
+  {{with .Collected}}· {{index $.T "collected"}} {{.}}{{end}}
+</footer>
+
+<script>window.BOOT = {{.Boot}};</script>
+<script src="/static/vendor/maplibre-gl.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>

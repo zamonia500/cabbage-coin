@@ -3,13 +3,13 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Status
-No code yet. `docs/plan.md` (Korean) is the design spec: read it before implementing anything. The structure and commands below are the plan; update this file once they exist.
+Implemented and tested locally; not deployed yet. `docs/plan.md` (Korean) is the design spec.
 
 ## What this is
 A site showing Japanese cabbage (キャベツ) prices by prefecture on a map, served at `cabbage.zamonia500.com` from an Oracle Cloud Ampere A1 (linux/arm64) instance. Hard constraints: **one static Go binary**, as light as possible.
 
-## Architecture (planned)
-- Flat `package main`: `main.go` (flags, HTTP, starts collector), `collect.go` (official sources), `stores.go` (supermarket store crawling), `store.go` (SQLite), `web.go` (handlers, i18n, SVG charts).
+## Architecture
+- Flat `package main`: `main.go` (flags, HTTP, collector loop), `collect.go` (official sources), `stores.go` + `robots.go` (supermarket store crawling), `store.go` (schema, writes), `queries.go` (reads), `web.go` (handlers, `/api/map`), `chart.go` (SVG line charts), `i18n.go` + `prefs.go` (ko/ja strings, prefecture names), `areas.go` (municipality seed).
 - **Collector runs in-process** (goroutine + `time.Ticker`); there is no cron. Writes are upserts so re-runs are safe; `fetch_log` records last success/error per source.
 - **Data sources**:
   - Retail, monthly: 小売物価統計調査 table 1 (主要品目の都市別小売価格) xlsx from e-Stat's file download, no appId. Item `1401` キャベツ per 1kg, 81 cities (prefectural capitals + 150k+ cities) keyed by 5-digit municipality code. The file is found by parsing the month's e-Stat list page (`parseEstatList`); published about two months late.
@@ -21,7 +21,7 @@ A site showing Japanese cabbage (キャベツ) prices by prefecture on a map, se
 - **Store crawling rules**: 2–3 stores per municipality, once a day, at least 5s between requests, honest UA `cabbage-coin/1.0 (+https://cabbage.zamonia500.com)`, check robots.txt at runtime (`robots.go`, RFC 9309 longest-match) and skip URLs it disallows, no retry on failure. Never add IP rotation, browser-UA spoofing or private/undocumented endpoints. Compare whole-head (1玉) tax-included prices; a municipality's value is the median of that day's stores.
 - **Claude does not access tokubai.co.jp** (its robots.txt blocks Anthropic agents by name). Its parser is built from samples the user saves into `testdata/`.
 - **Storage**: SQLite via `modernc.org/sqlite` (pure Go). Do not add cgo; it breaks the arm64 cross-build.
-- **Frontend**: `html/template` and static files via `go:embed` from `web/`. No JS framework and no bundler. The map is MapLibre GL JS (vendored, pinned version) over an OpenFreeMap basemap, with embedded GeoJSON colored through `feature-state` from `/api/map`, the only JSON endpoint. Prefecture boundaries load first; municipality boundaries (国土数値情報 N03 via smartnews-smri/japan-topography, simplified, 2021) are split into one file per prefecture (`web/geo/muni/NN.json`) and loaded on zoom. Hamamatsu's post-2024 wards have no shape. If the basemap style fails to load, fall back to an empty style so the prefecture fills still render. Charts are server-generated SVG.
+- **Frontend**: `html/template` (`web/templates`) and static files (`web/static`) via `go:embed`. No JS framework and no bundler; `web/static/app.js` is the only script besides vendored MapLibre GL JS 4.7.1. Pages are server-rendered at `/{ko,ja}/`, `/{lang}/pref/NN`, `/{lang}/muni/CODE`; the JS swaps the left panel via `/api/panel` (HTML fragment) and paints the map from `/api/map` (JSON: code → value, class -2..2, delta) through `feature-state`. A ward without its own retail survey takes its designated city's price (`cityPrice`). Map colors: diverging blue (cheap) ← gray → red (dear) around the median; each arm validated as an ordinal ramp. Prefecture boundaries load first; municipality boundaries (国土数値情報 N03 via smartnews-smri/japan-topography, simplified, 2021) are split into one file per prefecture (`web/geo/muni/NN.json`) and loaded on zoom. Hamamatsu's post-2024 wards have no shape. app.js fetches the basemap style first (4s timeout) and falls back to an empty style, then creates the map once; do not reintroduce `setStyle` swaps (they wipe our layers). Charts are server-generated SVG.
 - **Attribution is mandatory** in the footer: e-Stat, 東京都中央卸売市場, each store source, 国土数値情報, OpenMapTiles/OpenStreetMap.
 - **i18n**: URL prefix `/ko/` and `/ja/`; `/` redirects by `Accept-Language`. Every user-facing string and prefecture name needs both `ko` and `ja`.
 - **TLS is not in the binary.** The binary serves plain HTTP on `127.0.0.1:8080`, and Caddy in front handles HTTPS, Let's Encrypt and compression (`deploy/Caddyfile`).

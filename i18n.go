@@ -1,0 +1,99 @@
+package main
+
+// msgs holds every user-facing string; each key exists in both languages.
+var msgs = map[string]map[string]string{
+	"ko": {
+		"title":         "양배추 코인 — 일본 양배추 가격 지도",
+		"brand":         "양배추 코인",
+		"tagline":       "일본 양배추 가격, 지역별로",
+		"headline":      "이번 달 양배추, 어디가 제일 비쌀까?",
+		"national":      "전국 중앙값",
+		"per_kg":        "1kg당",
+		"per_head":      "1개(세금 포함)",
+		"vs_last_month": "전월 대비",
+		"vs_national":   "전국 대비",
+		"rank":          "현별 소매가 순위 (비싼 순)",
+		"retail_trend":  "소매가 추이 (월간, 1kg)",
+		"wholesale":     "도쿄 오타 시장 도매가 (상대거래 중간가, 1kg)",
+		"ota_mid":       "오타 시장 중간가",
+		"origins":       "오늘의 산지별 도매가",
+		"cities":        "조사 도시 소매가",
+		"stores":        "마트 점포가 (1개)",
+		"store_trend":   "최근 30일 점포 중앙값 (1개)",
+		"no_stores":     "아직 등록된 마트 점포가 없어요.",
+		"not_enabled":   "아직 수집 대상이 아닌 지역이에요. 인구와 마트 분포를 보고 순차적으로 넓혀요.",
+		"tokyo_wards":   "도쿄 23구",
+		"back":          "← 전국으로",
+		"back_pref":     "← 현으로",
+		"population":    "인구",
+		"store_count":   "점포 %d곳",
+		"search":        "현·시구정촌 이름으로 찾기 (예: 目黒区, 홋카이도)",
+		"metric":        "지도 색 기준",
+		"m_retail":      "소매가 (월간)",
+		"m_mom":         "전월 대비 변화",
+		"m_store":       "마트 점포가 (일간)",
+		"cheap":         "쌈",
+		"dear":          "비쌈",
+		"no_data":       "데이터가 아직 없어요.",
+		"table":         "표로 보기",
+		"sources":       "출처",
+		"collected":     "최종 수집",
+		"lang_other":    "日本語",
+		"wholesale_of":  "이 현에서 온 키베츠 도매가 (오타 시장, 1kg)",
+		"ym":            "기준월",
+		"date":          "기준일",
+	},
+	"ja": {
+		"title":         "キャベツコイン — 日本のキャベツ価格マップ",
+		"brand":         "キャベツコイン",
+		"tagline":       "キャベツの値段を地域ごとに",
+		"headline":      "今月のキャベツ、どこが一番高い？",
+		"national":      "全国中央値",
+		"per_kg":        "1kgあたり",
+		"per_head":      "1玉（税込）",
+		"vs_last_month": "前月比",
+		"vs_national":   "全国比",
+		"rank":          "都道府県別 小売価格ランキング（高い順）",
+		"retail_trend":  "小売価格の推移（月次・1kg）",
+		"wholesale":     "東京・大田市場 卸売価格（相対・中値・1kg）",
+		"ota_mid":       "大田市場 中値",
+		"origins":       "本日の産地別卸売価格",
+		"cities":        "調査都市の小売価格",
+		"stores":        "スーパー店頭価格（1玉）",
+		"store_trend":   "直近30日の店舗中央値（1玉）",
+		"no_stores":     "登録されたスーパーはまだありません。",
+		"not_enabled":   "まだ収集対象外の地域です。人口と店舗の分布を見ながら順次広げます。",
+		"tokyo_wards":   "東京都区部",
+		"back":          "← 全国へ",
+		"back_pref":     "← 都道府県へ",
+		"population":    "人口",
+		"store_count":   "%d店舗",
+		"search":        "都道府県・市区町村名で検索（例：目黒区、北海道）",
+		"metric":        "地図の色",
+		"m_retail":      "小売価格（月次）",
+		"m_mom":         "前月比",
+		"m_store":       "スーパー店頭価格（日次）",
+		"cheap":         "安い",
+		"dear":          "高い",
+		"no_data":       "データがまだありません。",
+		"table":         "表で見る",
+		"sources":       "出典",
+		"collected":     "最終収集",
+		"lang_other":    "한국어",
+		"wholesale_of":  "この県産キャベツの卸売価格（大田市場・1kg）",
+		"ym":            "対象月",
+		"date":          "対象日",
+	},
+}
+
+// jsStrings is the subset app.js needs.
+var jsStrings = map[string]map[string]string{}
+
+func init() {
+	for lang, m := range msgs {
+		jsStrings[lang] = map[string]string{}
+		for _, k := range []string{"m_retail", "m_mom", "m_store", "vs_national", "vs_last_month", "store_count", "no_data", "cheap", "dear"} {
+			jsStrings[lang][k] = m[k]
+		}
+	}
+}
