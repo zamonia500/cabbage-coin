@@ -1,0 +1,28 @@
+<div data-kind="pref" data-code="{{.Code}}">
+<a class="back" href="/{{.Lang}}/" data-kind="home">{{index .T "back"}}</a>
+<h1>{{.Name}}</h1>
+{{if .HasRetail}}
+<p class="muted">{{index .T "ym"}} {{.YM}} · {{index .T "per_kg"}}</p>
+<div class="hero">
+  <strong>{{yen .Value}}</strong>
+  <span class="delta {{delta .MoM}}">{{index .T "vs_last_month"}} {{pct .MoM}}</span>
+  <span class="delta {{delta .VsNational}}">{{index .T "vs_national"}} {{pct .VsNational}}</span>
+</div>
+<h2>{{index .T "retail_trend"}}</h2>
+{{.RetailChart}}
+<h2>{{index .T "cities"}}</h2>
+<ul class="plain">{{range .Cities}}<li><span>{{.Name}}</span><b>{{yen .Value}}</b><small class="delta {{delta .Delta}}">{{pct .Delta}}</small></li>{{end}}</ul>
+{{else}}
+<p class="muted">{{index .T "no_data"}}</p>
+{{end}}
+
+<h2>{{index .T "stores"}} {{with .StoreDate}}<small class="muted">{{.}}</small>{{end}}</h2>
+{{with .Stores}}
+<ul class="plain">{{range .}}<li><a href="/{{$.Lang}}/muni/{{.Code}}" data-kind="muni" data-code="{{.Code}}"><span>{{.Name}}</span><b>{{yen .Value}}</b></a></li>{{end}}</ul>
+{{else}}<p class="muted">{{index .T "no_stores"}}</p>{{end}}
+
+{{with .WholesaleChart}}
+<h2>{{index $.T "wholesale_of"}}</h2>
+{{.}}
+{{end}}
+</div>

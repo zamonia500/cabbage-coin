@@ -1,0 +1,24 @@
+<div data-kind="home">
+<h1>{{index .T "headline"}}</h1>
+<p class="muted">{{index .T "ym"}} {{.YM}} · {{index .T "per_kg"}}</p>
+<div class="hero">
+  <span class="label">{{index .T "national"}}</span>
+  <strong>{{yen .National}}</strong>
+  <span class="delta {{delta .NationalDelta}}">{{index .T "vs_last_month"}} {{pct .NationalDelta}}</span>
+</div>
+
+<h2>{{index .T "rank"}}</h2>
+<ol class="rank">
+{{range .Rank}}<li><a href="/{{$.Lang}}/pref/{{.Code}}" data-kind="pref" data-code="{{.Code}}"><span>{{.Name}}</span><b>{{yen .Value}}</b><small class="delta {{delta .Delta}}">{{pct .Delta}}</small></a></li>
+{{end}}</ol>
+
+<h2>{{index .T "retail_trend"}}</h2>
+{{.RetailChart}}
+
+<h2>{{index .T "wholesale"}}</h2>
+{{.WholesaleChart}}
+{{with .Origins}}
+<h3>{{index $.T "origins"}} <small class="muted">{{$.WholesaleDate}}</small></h3>
+<ul class="plain">{{range .}}<li><span>{{.Name}}</span><b>{{yen .Value}}</b></li>{{end}}</ul>
+{{end}}
+</div>

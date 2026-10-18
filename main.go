@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"time"
@@ -11,6 +12,8 @@ import (
 func main() {
 	dataDir := flag.String("data", ".", "directory holding cabbage.db")
 	once := flag.Bool("once", false, "run every collector once, then exit")
+	addr := flag.String("addr", "127.0.0.1:8080", "HTTP listen address")
+	noCollect := flag.Bool("no-collect", false, "serve only; do not run collectors")
 	flag.Parse()
 
 	if err := os.MkdirAll(*dataDir, 0o755); err != nil {
@@ -29,13 +32,16 @@ func main() {
 		collectAll(db)
 		return
 	}
-	go func() {
-		for {
-			collectAll(db)
-			time.Sleep(24 * time.Hour)
-		}
-	}()
-	select {}
+	if !*noCollect {
+		go func() {
+			for {
+				collectAll(db)
+				time.Sleep(24 * time.Hour)
+			}
+		}()
+	}
+	log.Printf("listening on %s", *addr)
+	log.Fatal(http.ListenAndServe(*addr, (&server{db: db}).routes()))
 }
 
 // collectAll runs each collector and records the outcome in fetch_log.
