@@ -1,7 +1,9 @@
 package main
 
 import (
+	"crypto/sha256"
 	"embed"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -74,6 +76,19 @@ func classify(d, step1, step2 float64) int {
 	}
 	return 2
 }
+
+// assetVersion changes whenever an embedded static file does, so ?v= busts browser caches.
+var assetVersion = func() string {
+	h := sha256.New()
+	fs.WalkDir(webFS, "web/static", func(p string, d fs.DirEntry, err error) error {
+		if err == nil && !d.IsDir() {
+			b, _ := webFS.ReadFile(p)
+			h.Write(b)
+		}
+		return nil
+	})
+	return hex.EncodeToString(h.Sum(nil))[:10]
+}()
 
 type server struct {
 	db   *DB
@@ -148,7 +163,7 @@ func (s *server) page(w http.ResponseWriter, r *http.Request) {
 	})
 	data := map[string]any{
 		"Lang": lang, "T": msgs[lang], "Panel": panel, "Boot": template.JS(boot),
-		"Collected": s.db.lastCollected(), "Path": strings.TrimPrefix(r.URL.Path, "/"+lang),
+		"Collected": s.db.lastCollected(), "Path": strings.TrimPrefix(r.URL.Path, "/"+lang), "V": assetVersion,
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := tmpl.ExecuteTemplate(w, "page.tmpl", data); err != nil {

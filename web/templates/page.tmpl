@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{index .T "title"}}</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥬</text></svg>">
-<link rel="stylesheet" href="/static/vendor/maplibre-gl.css">
-<link rel="stylesheet" href="/static/style.css">
+<link rel="stylesheet" href="/static/vendor/maplibre-gl.css?v={{.V}}">
+<link rel="stylesheet" href="/static/style.css?v={{.V}}">
 </head>
 <body>
 <div id="map" aria-label="map"></div>
@@ -43,11 +43,12 @@
   <a href="https://shop.aeon.com/netsuper/">イオンネットスーパー</a> ·
   <a href="https://nlftp.mlit.go.jp/ksj/">国土数値情報（行政区域）</a> ·
   <a href="https://www.soumu.go.jp/main_sosiki/jichi_gyousei/daityo/jinkou_jinkoudoutai-setaisuu.html">総務省 住民基本台帳</a>
+  {{index .T "processed"}}
   {{with .Collected}}· {{index $.T "collected"}} {{.}}{{end}}
 </footer>
 
 <script>window.BOOT = {{.Boot}};</script>
-<script src="/static/vendor/maplibre-gl.js"></script>
-<script src="/static/app.js"></script>
+<script src="/static/vendor/maplibre-gl.js?v={{.V}}"></script>
+<script src="/static/app.js?v={{.V}}"></script>
 </body>
 </html>

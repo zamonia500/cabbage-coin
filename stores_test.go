@@ -46,6 +46,7 @@ func TestAreaFromAddress(t *testing.T) {
 		"東京都府中市宮町1-1":           "13206",
 		"広島県安芸郡府中町大須2丁目1-1":     "34302", // not Tokyo's 府中市
 		"広島県府中町大須2丁目1-1":        "34302", // county omitted
+		"千葉県鎌ヶ谷市新鎌ヶ谷 2-7-1":     "12224", // ヶ vs ケ in the MIC table
 		"神奈川県横浜市港北区新横浜2-100-45": "14109",
 	} {
 		got, err := areaFromAddress(addr, areas)
