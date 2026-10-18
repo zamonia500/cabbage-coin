@@ -1,0 +1,19 @@
+User-Agent: *
+Disallow: /
+Disallow: /netsuper/*/*/
+Disallow: /netsuper/*/maintenance
+Allow: /netsuper/
+
+User-agent: Yandex
+Disallow: /
+
+User-agent: bingbot
+Crawl-Delay: 60
+
+User-Agent: Googlebot
+Disallow: /
+Disallow: /netsuper/*/*/
+Disallow: /netsuper/*/maintenance
+Allow: /google8cfb20e892753bfe.html
+Allow: /netsuper/
+Allow: /netsuper/pub/images/wysiwyg/advertising

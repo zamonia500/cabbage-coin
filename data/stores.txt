@@ -1,0 +1,7 @@
+# Aeon Net Super cabbage product pages, one per line. A store is registered
+# from its product URL the first time the collector sees it.
+# Find a URL by opening the store on shop.aeon.com in a browser and searching キャベツ.
+# Prefer the whole-head (1個) item.
+
+# イオンスタイル碑文谷 (目黒区)
+https://shop.aeon.com/netsuper/01050000047260/010500000472602000044588272.html
