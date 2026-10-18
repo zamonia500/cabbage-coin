@@ -61,4 +61,9 @@ func collectAll(db *DB) {
 	if err != nil {
 		log.Printf("wholesale: %v", err)
 	}
+	err = collectStores(db, newFetcher(5*time.Second))
+	db.logFetch("aeon", err)
+	if err != nil {
+		log.Printf("stores: %v", err)
+	}
 }
