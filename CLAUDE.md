@@ -17,11 +17,11 @@ A site showing Japanese cabbage (キャベツ) prices by prefecture on a map, se
   - Supermarket stores, daily: per-store prices (Aeon Net Super product pages; Tokubai pending ToS check), mapped to municipalities.
   - Never guess `statsDataId`, item codes, CSV URLs or columns. Look them up live, then save real responses in `testdata/` for parser tests.
 - **Two map levels**: prefecture (JIS 1–47, official data, whole country) and municipality (5-digit 全国地方公共団体コード, store data). Prefecture code joins retail (consumer city) and wholesale (origin prefecture).
-- **Collection scope is data, not code**: `area.enabled` selects municipalities. It starts with 194 (Tokyo's 23 wards + 171 designated-city wards, after Hamamatsu's 2024 reorganization) and widens by population and store presence after reviewing results.
+- **Collection scope is data, not code**: `area` is seeded once from the embedded `data/areas.csv` (MIC resident-register table: code, name, population) and `area.enabled` selects municipalities. It starts with 194 (Tokyo's 23 wards + 171 designated-city wards, after Hamamatsu's 2024 reorganization) and widens by population and store presence after reviewing results.
 - **Store crawling rules**: 2–3 stores per municipality, once a day, at least 5s between requests, honest UA `cabbage-coin/1.0 (+https://cabbage.zamonia500.com)`, check robots.txt at runtime and skip the source if disallowed, no retry on failure. Never add IP rotation, browser-UA spoofing or private/undocumented endpoints. Compare whole-head (1玉) tax-included prices; a municipality's value is the median of that day's stores.
 - **Claude does not access tokubai.co.jp** (its robots.txt blocks Anthropic agents by name). Its parser is built from samples the user saves into `testdata/`.
 - **Storage**: SQLite via `modernc.org/sqlite` (pure Go). Do not add cgo; it breaks the arm64 cross-build.
-- **Frontend**: `html/template` and static files via `go:embed` from `web/`. No JS framework and no bundler. The map is MapLibre GL JS (vendored, pinned version) over an OpenFreeMap basemap, with embedded GeoJSON colored through `feature-state` from `/api/map`, the only JSON endpoint. Prefecture boundaries load first; municipality boundaries (国土数値情報 N03, simplified) are split into one file per prefecture and loaded on zoom. If the basemap style fails to load, fall back to an empty style so the prefecture fills still render. Charts are server-generated SVG.
+- **Frontend**: `html/template` and static files via `go:embed` from `web/`. No JS framework and no bundler. The map is MapLibre GL JS (vendored, pinned version) over an OpenFreeMap basemap, with embedded GeoJSON colored through `feature-state` from `/api/map`, the only JSON endpoint. Prefecture boundaries load first; municipality boundaries (国土数値情報 N03 via smartnews-smri/japan-topography, simplified, 2021) are split into one file per prefecture (`web/geo/muni/NN.json`) and loaded on zoom. Hamamatsu's post-2024 wards have no shape. If the basemap style fails to load, fall back to an empty style so the prefecture fills still render. Charts are server-generated SVG.
 - **Attribution is mandatory** in the footer: e-Stat, 東京都中央卸売市場, each store source, 国土数値情報, OpenMapTiles/OpenStreetMap.
 - **i18n**: URL prefix `/ko/` and `/ja/`; `/` redirects by `Accept-Language`. Every user-facing string and prefecture name needs both `ko` and `ja`.
 - **TLS is not in the binary.** The binary serves plain HTTP on `127.0.0.1:8080`, and Caddy in front handles HTTPS, Let's Encrypt and compression (`deploy/Caddyfile`).
@@ -34,6 +34,7 @@ go run . -data ./tmp -once          # run every collector once against live sour
 go run . -data ./tmp                # local, http://localhost:8080/ko/
 go test ./...                       # parser tests against testdata/
 go test -run TestParseEstat ./...   # single test
+go run ./tools/gendata              # regenerate data/areas.csv and web/geo/ (committed; rerun only to refresh)
 GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -ldflags="-s -w" -o cabbage .   # server build
 ```
 

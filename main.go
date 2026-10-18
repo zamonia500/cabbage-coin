@@ -21,6 +21,9 @@ func main() {
 		log.Fatal(err)
 	}
 	defer db.Close()
+	if err := seedAreas(db); err != nil {
+		log.Fatal(err)
+	}
 
 	if *once {
 		collectAll(db)
