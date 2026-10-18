@@ -9,26 +9,25 @@
 ## 지역 단위 — 두 층
 1. **현(都道府県, 47)**: 공식 통계로 전국을 빠짐없이 칠하는 기본 지도.
 2. **시구정촌(市区町村)**: 마트 점포 가격으로 칠하는 확대 지도. 키는 전국지방공공단체코드(5자리).
-   - **초기 수집 범위: 198개** = 도쿄 23구 + 정령지정도시 20곳의 행정구 175.
+   - **초기 수집 범위: 194개** = 도쿄 23구 + 정령지정도시 20곳의 행정구 171 (2024 하마마쓰 구 개편 후, 총무성 주민기본대장 2026 표로 확인).
    - **확장 원칙**: 인구수와 마트 존재 여부를 보고 수집 지역을 넓힌다 (예: 인구 상위 시 → 나머지 시 → 정·촌). 어디로 넓힐지는 초기 수집 결과(점포가 잡히는 비율, 가격 편차)를 보고 정한다.
    - 확장은 코드가 아니라 **데이터**로 한다: `area.enabled` 플래그만 바꾸면 수집 대상이 바뀐다.
-   - 전국 최대 약 1,896 단위(지정도시를 구로 쪼갤 때). 단위 수는 총무성 코드표로 확정할 것(2024 하마마쓰 구 개편 이후 기준).
 
 ## 데이터 소스
 | 구분 | 소스 | 주기 | 지역 단위 | 수집 방법 | 상태 |
 |---|---|---|---|---|---|
-| 소매 (공식) | e-Stat 小売物価統計調査 — キャベツ 1kg | 월간 (익월 하순) | 47 현청 소재 도시 | e-Stat API v3 (무료 appId) | 확정 |
-| 도매 (공식) | 東京都中央卸売市場 市場統計情報 — キャベツ | 일간 | 산지(현)별 | 일별 CSV | 확정 |
+| 소매 (공식) | 小売物価統計調査 第1表 — キャベツ(1401) 1kg | 월간 (약 2개월 뒤) | 81개 시 (현청 소재지 + 인구 15만 이상) | e-Stat 파일 다운로드 xlsx (appId 불필요) | 구현 |
+| 도매 (공식) | 東京都中央卸売市場日報 — 大田市場 青果 | 일간 | 산지·판매방법별 10kg 가격 | 일별 CSV (Shift-JIS) | 구현 |
 | 마트 점포 | 이온 넷슈퍼 상품 페이지 | 일간 | 점포 → 시구정촌 | 공개 HTML의 `product:price:amount` meta | 조사 중 |
 | 마트 점포 | 토쿠바이 공개 점포 페이지 | 일간 | 점포 → 시구정촌 | 공개 HTML | 이용약관 확인 후 결정 |
 
-- 공식 소스 ID(`statsDataId`, 품목 코드, CSV URL·컬럼)는 **추측 금지**, 구현 첫 단계에서 실제 조회로 확정.
+- 공식 소스 형식은 실제 응답으로 확정했고 샘플은 `testdata/`에 있음.
 - 공식 소스 추가 후보: 농림수산성 食品価格動向調査(주간, 마트 470곳 **전국 평균만** 공개 — 확인함), ALIC 베지탄(14개 도시 19개 시장 도매, 산지별).
 - 이온 넷슈퍼 확인 사항: 로그인 없이 가격 노출(확인함, 예: 398엔/세포함 429.84엔). robots.txt는 `/netsuper/*/*/`(슬래시로 끝나는 목록 경로)만 금지 → 상품 `.html` 페이지 허용. 남은 것: 점포 간 상품 ID 규칙, 점포 코드 목록·주소(→ 시구정촌 매핑), 이용약관.
 - 토쿠바이: robots.txt는 Anthropic 계열 봇만 전체 차단, `User-agent: *`는 `/2026/random_product`만 금지. 이용약관은 사용자가 직접 확인. Claude는 이 사이트에 직접 접속하지 않으며, 파서는 사용자가 저장한 샘플(`testdata/`)로 만든다. 비공개 JSON 엔드포인트는 쓰지 않는다.
 
 ### 점포 수집 규칙 (모든 마트 소스 공통)
-- 시구정촌당 점포 **2~3곳**, 하루 1회. 요청 간격 5초 이상 → 198 단위 × 3 ≈ 600회/일, 약 50분.
+- 시구정촌당 점포 **2~3곳**, 하루 1회. 요청 간격 5초 이상 → 194 단위 × 3 ≈ 580회/일, 약 50분.
 - 정직한 User-Agent: `cabbage-coin/1.0 (+https://cabbage.zamonia500.com)`. 수집 전 robots.txt를 읽어 이 UA가 허용되는지 확인, 금지면 그 소스는 건너뛰고 `fetch_log`에 기록.
 - 실패 시 그날은 재시도하지 않고 다음 날로. IP 순환·브라우저 UA 위장 등 차단 회피 장치는 넣지 않는다.
 - 상품 비교 기준: **1개(1玉) 가격, 세포함**. 1/2·1/4 컷은 따로 저장하되 지도 값에는 쓰지 않음. 특가 여부 플래그 저장.
@@ -80,7 +79,7 @@ wholesale(date TEXT, market TEXT, origin_pref INT, qty_kg INT, hi INT, mid INT, 
           PRIMARY KEY(date, market, origin_pref));
 fetch_log(source TEXT PRIMARY KEY, last_ok TEXT, last_err TEXT);
 ```
-`area`는 총무성 코드표 + 인구(국세조사)로 초기 적재하고 198개만 `enabled=1`.
+`area`는 총무성 주민기본대장 시구정촌별 인구표(코드·이름·인구)로 초기 적재하고 194개만 `enabled=1`.
 
 ## 레이아웃
 ```
@@ -100,7 +99,7 @@ deploy/cabbage.service, deploy/Caddyfile
 2. OCI VCN Security List에 80/443 인바운드 허용. **Oracle Ubuntu 이미지는 iptables가 기본 차단** → `iptables -I INPUT -p tcp --dport 80/443 -j ACCEPT` + `netfilter-persistent save`.
 3. 빌드: `GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -ldflags="-s -w" -o cabbage .`
 4. `scp` → `/opt/cabbage/`.
-5. systemd 유닛: `ESTAT_APP_ID` 환경변수, `-addr 127.0.0.1:8080`, `-data /var/lib/cabbage`(DB), `Restart=always`, 전용 비root 사용자.
+5. systemd 유닛: ``-addr 127.0.0.1:8080`, `-data /var/lib/cabbage`(DB), `Restart=always`, 전용 비root 사용자.
 6. Caddy (apt 설치, 자체 systemd): `/etc/caddy/Caddyfile`에
    ```
    cabbage.zamonia500.com {
@@ -111,8 +110,8 @@ deploy/cabbage.service, deploy/Caddyfile
 CI/CD, Docker 없음 — `make deploy` 한 줄(scp + systemctl restart)이면 충분.
 
 ## 구현 순서
-1. 공식 소스: e-Stat appId 발급, statsDataId·도매 CSV 형식 확정, 샘플 `testdata/` 저장 → 파서·테스트 → 수집기.
-2. `area` 적재: 총무성 코드표 + 인구, 198개 enabled.
+1. 공식 소스: 형식 확정, 샘플 `testdata/` 저장 → 파서·테스트 → 수집기. (완료)
+2. `area` 적재: 총무성 주민기본대장 인구표, 194개 enabled.
 3. 마트 소스 조사 마무리: 이온(상품 ID 규칙·점포 목록·약관), 토쿠바이(사용자 약관 확인·샘플 저장). 통과한 소스부터 `stores.go`.
 4. 경계 GeoJSON 준비(현 + 시구정촌 현별 분할, 단순화), MapLibre 페이지·패널, SVG 차트, i18n.
 5. arm64 빌드, 서버 배포, Caddy 설정·인증서 확인.
@@ -121,5 +120,5 @@ CI/CD, Docker 없음 — `make deploy` 한 줄(scp + systemctl restart)이면 �
 ## 검증
 - 구현 시: `go test ./...` (testdata 기반 파서 테스트), `go run .` 후 `localhost:8080/ko/`, `/ja/` 확인.
 - 배포 후: `curl -I https://cabbage.zamonia500.com` 200 + 유효 인증서, `journalctl -u cabbage`에서 수집 성공 로그.
-- 점포 수집: 하루 요청 수·소요 시간이 위 예산(≈600회, 1시간 이내) 안인지 `fetch_log`로 확인. enabled 198개 중 점포가 1곳 이상 잡힌 비율 확인.
+- 점포 수집: 하루 요청 수·소요 시간이 위 예산(≈600회, 1시간 이내) 안인지 `fetch_log`로 확인. enabled 194개 중 점포가 1곳 이상 잡힌 비율 확인.
 - `ls -lh cabbage` 바이너리 크기 (목표: 시구정촌 GeoJSON 포함 ~25MB 이하).
