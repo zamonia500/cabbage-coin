@@ -20,17 +20,22 @@
   const JAPAN = [[122.5, 24], [146, 45.6]];
   const map = new maplibregl.Map({
     container: 'map', style, bounds: JAPAN, fitBoundsOptions: { padding: panelPadding() },
-    minZoom: 3.5, maxZoom: 12, maxBounds: [[110, 12], [170, 54]],
+    maxZoom: 12, maxBounds: [[115, 15], [165, 52]],
     attributionControl: { compact: true },
   });
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
+  // Never zoom out past the whole of Japan; recomputed when the window changes size.
+  const lockZoom = () => map.setMinZoom(Math.max(0, map.cameraForBounds(JAPAN, { padding: panelPadding() }).zoom - 0.3));
+  lockZoom();
+  map.on('resize', lockZoom);
 
   // Drawn through the straits so Korea, Russia, China and Taiwan fall outside while every
   // Japanese island (Tsushima, Yonaguni, Okinotorishima, Minamitorishima, Kurils) stays in.
+  // Ulleungdo and Dokdo/Takeshima fall outside on purpose: neither name is shown.
   const JAPAN_WATERS = [[140.8, 45.65], [142.3, 45.5], [145.5, 44.9], [147.8, 45.6], [149.2, 45.75], [150.5, 45],
     [155, 40], [155.5, 24.5], [154.5, 23.5], [137, 19.6], [135.2, 20.3], [124.5, 20.5], [122.6, 23.6],
     [122.6, 24.8], [123.2, 26.2], [125.8, 28.8], [127.6, 31.6], [128.6, 33.6], [128.95, 34.3], [129.3, 34.95],
-    [130.6, 35.7], [131.4, 37.6], [134.5, 40.5], [137.8, 43.5], [139.6, 45.7], [140.8, 45.65]];
+    [130.6, 35.7], [132.6, 36.6], [132.6, 37.6], [134.5, 40.5], [137.8, 43.5], [139.6, 45.7], [140.8, 45.65]];
 
   const fillColor = () => {
     const c = ['--c-2', '--c-1', '--c0', '--c1', '--c2'].map(css);
@@ -50,6 +55,10 @@
     const before = layers.find((l) => l.type === 'symbol')?.id; // keep place labels on top
     // Place names in the page language, falling back to Japanese, then the local name.
     for (const l of layers) {
+      if (l['source-layer'] === 'water_name') { // sea names (e.g. 日本海/동해) are not ours to settle
+        map.setLayoutProperty(l.id, 'visibility', 'none');
+        continue;
+      }
       if (l.type === 'symbol' && l.layout && l.layout['text-field']) {
         map.setLayoutProperty(l.id, 'text-field', ['coalesce', ['get', `name:${B.lang}`], ['get', 'name:ja'], ['get', 'name']]);
       }
@@ -108,6 +117,12 @@
       if (!muniGeo[code]) muniGeo[code] = await (await fetch(`/geo/muni/${code}.json`)).json();
       map.getSource('muni').setData(muniGeo[code]);
       shownPref = code;
+      // Wards and towns differ only in store prices (official retail is one value per city,
+      // e.g. all 23 Tokyo wards share 東京都区部), so drilling in shows store prices when any exist.
+      if (metric !== 'store') {
+        const r = await (await fetch(`/api/map?level=muni&pref=${code}&metric=store`)).json();
+        if (Object.keys(r.values).length) setMetric('store');
+      }
     }
     await paintMuni(code);
     const f = prefGeo.features.find((x) => x.properties.code === code);
@@ -197,9 +212,13 @@
 
   // Metric switch repaints whatever is shown.
   const scaleMid = document.getElementById('scale-mid');
+  function setMetric(m) {
+    metric = m;
+    document.querySelector(`#metric input[value="${m}"]`).checked = true;
+    scaleMid.textContent = m === 'mom' ? '±0%' : '';
+  }
   document.getElementById('metric').addEventListener('change', async (e) => {
-    metric = e.target.value;
-    scaleMid.textContent = metric === 'mom' ? '±0%' : '';
+    setMetric(e.target.value);
     await paintPref();
     if (shownPref) await paintMuni(shownPref);
   });

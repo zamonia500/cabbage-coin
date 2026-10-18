@@ -86,17 +86,22 @@ func parseAeonStore(page []byte) (name, address string, err error) {
 
 var county = regexp.MustCompile(`^[^市区町村]+?郡`)
 
+// smallKana folds the ヶ/ケ spelling variants in place names (鎌ヶ谷市 = 鎌ケ谷市).
+var smallKana = strings.NewReplacer("ヶ", "ケ", "ヵ", "カ")
+
 // areaFromAddress finds the municipality an address lies in: the longest
 // area name in that prefecture that the rest of the address starts with.
 // Town names carry their county (安芸郡府中町); addresses may drop it.
 func areaFromAddress(address string, areas []Area) (string, error) {
+	address = smallKana.Replace(address)
 	best, bestLen := "", 0
 	for _, a := range areas {
 		rest, ok := strings.CutPrefix(address, prefNames[a.Pref-1])
 		if !ok {
 			continue
 		}
-		for _, name := range []string{a.Name, county.ReplaceAllString(a.Name, "")} {
+		full := smallKana.Replace(a.Name)
+		for _, name := range []string{full, county.ReplaceAllString(full, "")} {
 			if strings.HasPrefix(rest, name) && len(name) > bestLen {
 				best, bestLen = a.Code, len(name)
 			}
