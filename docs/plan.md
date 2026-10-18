@@ -107,7 +107,7 @@ deploy/cabbage.service, deploy/Caddyfile
        reverse_proxy 127.0.0.1:8080
    }
    ```
-CI/CD, Docker 없음 — `make deploy` 한 줄(scp + systemctl restart)이면 충분.
+CI/CD, Docker 없음 — `make deploy` 한 줄(scp + systemctl restart)이면 충분. `deploy/cabbage.service`, `deploy/Caddyfile`, `Makefile` 작성됨(서버 적용은 아직).
 
 ## 구현 순서
 1. 공식 소스: 형식 확정, 샘플 `testdata/` 저장 → 파서·테스트 → 수집기. (완료)

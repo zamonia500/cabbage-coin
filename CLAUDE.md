@@ -35,8 +35,11 @@ go run . -data ./tmp                # local, http://localhost:8080/ko/
 go test ./...                       # parser tests against testdata/
 go test -run TestParseEstat ./...   # single test
 go run ./tools/gendata              # regenerate data/areas.csv and web/geo/ (committed; rerun only to refresh)
-GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -ldflags="-s -w" -o cabbage .   # server build
+make test                           # vet + tests
+make build                          # linux/arm64 static binary (~16MB)
+make deploy                         # test, build, scp, restart (needs ssh to the server)
 ```
+A first `-once` run against an empty data dir takes ~6 minutes (36 months of retail, 60 days of wholesale at 2s spacing).
 
 ## Deploy gotchas (Oracle Ampere)
 - Open 80/443 in the OCI Security List **and** in the instance's iptables: Oracle Ubuntu images block them by default. Persist with `netfilter-persistent save`.
